@@ -25,11 +25,19 @@ import pandas as pd
 from tqdm import tqdm
 import urllib3
 
-try:
-    import certifi_win32  # type: ignore  # noqa: F401
-    _WIN_TRUST = True
-except Exception:
-    _WIN_TRUST = False
+# Optional Windows trust store integration via certifi-win32.
+# Use importlib to detect presence without forcing dependency at import time.
+_WIN_TRUST = False
+if os.name == "nt":
+    try:
+        import importlib.util
+        spec = importlib.util.find_spec("certifi_win32")
+        if spec is not None:
+            import importlib
+            importlib.import_module("certifi_win32")  # applies Windows cert store patch
+            _WIN_TRUST = True
+    except Exception:
+        _WIN_TRUST = False
 
 DEFAULT_TZ = timezone.utc
 SOW_FIELD_ID = "customfield_11921"

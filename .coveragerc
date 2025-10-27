@@ -1,0 +1,8 @@
+[run]
+branch = True
+
+[report]
+# Omit modules that are thin delegating shims or not meaningful for coverage
+omit =
+    jira_worklog_extractor/cli.py
+    */__init__.py

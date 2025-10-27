@@ -5,6 +5,12 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# Route legacy module name to the single source of truth (package core)
+# This keeps existing tests importing mJiraWorkLogExtractor working without duplicating code.
+import importlib
+_core_mod = importlib.import_module("jira_worklog_extractor.core")
+sys.modules["mJiraWorkLogExtractor"] = _core_mod
+
 import types
 import time as _time
 from dataclasses import dataclass
