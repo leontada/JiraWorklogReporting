@@ -1,0 +1,86 @@
+# ------------------------------
+# Python bytecode and caches
+# ------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ------------------------------
+# Virtual environments
+# ------------------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+myenv/
+
+# ------------------------------
+# Distribution / packaging artifacts
+# ------------------------------
+build/
+dist/
+dist_*/
+*.egg-info/
+*.egg
+*.whl
+
+# PyInstaller (keep the .spec file tracked)
+#*.spec  # Do NOT uncomment; we keep mJiraWorkLogExtractor.spec in version control
+*.manifest
+
+# ------------------------------
+# Logs and temp files
+# ------------------------------
+*.log
+*.tmp
+*.temp
+
+# ------------------------------
+# Test / tooling caches
+# ------------------------------
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.dmypy.json
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache/
+htmlcov/
+
+# ------------------------------
+# IDE / Editor settings
+# ------------------------------
+.vscode/
+.idea/
+*.iml
+
+# ------------------------------
+# OS-generated files
+# ------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------
+# Project-specific ignores
+# ------------------------------
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Sensitive config files (keep only the template tracked)
+config.ini
+config_bkp.ini
+dist*/config.ini
+!TEMPLATE_config.ini
+
+# Generated Excel reports
+*.xlsx
+
+# Local executables (if ever copied to project root)
+*.exe

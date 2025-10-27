@@ -28,11 +28,17 @@ import pandas as pd
 from tqdm import tqdm
 import urllib3
 
-""" try:
-    import certifi_win32  # type: ignore # noqa: F401
-    _CERTIFI_WIN32_OK = True
-except Exception:
-    _CERTIFI_WIN32_OK = False """
+_WIN_TRUST = False
+if os.name == "nt":
+    try:
+        import importlib.util
+        spec = importlib.util.find_spec("certifi_win32")
+        if spec is not None:
+            import importlib
+            importlib.import_module("certifi_win32")  # applies Windows cert store patch
+            _WIN_TRUST = True
+    except Exception:
+        _WIN_TRUST = False
 
 DEFAULT_TZ = timezone.utc
 SOW_FIELD_ID = "customfield_11921"
@@ -156,6 +162,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--max-workers", type=int, default=8, help="Máximo de threads para worklogs (default=8)")
     p.add_argument("--timeout", type=int, default=120, help="Timeout por requisição (s) (default=120)")
     p.add_argument("--insecure", action="store_true", help="DESATIVA verificação SSL (NÃO RECOMENDADO)")
+    p.add_argument("--sow-field-id", default="", help="Override Jira SoW custom field id (e.g., customfield_12345)")
     return p.parse_args()
 
 def vprint(verbose: bool, *args, **kwargs):
@@ -181,8 +188,12 @@ def read_config(path: str) -> Dict[str, Any]:
     base_url = sec.get("base_url", "").strip().rstrip("/")
     email    = sec.get("email", "").strip()
     token    = sec.get("api_token", "").strip()
+    # Fallback para variáveis de ambiente (não requer python-dotenv)
+    base_url = (base_url or os.environ.get("JIRA_BASE_URL", "")).strip().rstrip("/")
+    email    = (email or os.environ.get("JIRA_EMAIL", "")).strip()
+    token    = (token or os.environ.get("JIRA_API_TOKEN", "")).strip()
     if not (base_url and email and token):
-        print("ERRO: base_url, email e api_token são obrigatórios na seção [jira].", file=sys.stderr)
+        print("ERRO: base_url, email e api_token são obrigatórios (config.ini ou variáveis de ambiente).", file=sys.stderr)
         sys.exit(2)
 
     verify_ssl = sec.get("verify_ssl", "true").strip().lower() in ("1", "true", "yes", "on")
@@ -190,8 +201,9 @@ def read_config(path: str) -> Dict[str, Any]:
     http_proxy  = sec.get("http_proxy", "").strip()
     https_proxy = sec.get("https_proxy", "").strip()
 
-    start_date = sec.get("start_date", "").strip()
-    end_date   = sec.get("end_date", "").strip()
+    start_date = sec.get("start_date", "").strip() or os.environ.get("JIRA_START_DATE", "").strip()
+    end_date   = sec.get("end_date", "").strip() or os.environ.get("JIRA_END_DATE", "").strip()
+    sow_field_id = sec.get("sow_field_id", "").strip()
 
     return {
         "base_url": base_url,
@@ -203,6 +215,7 @@ def read_config(path: str) -> Dict[str, Any]:
         "https_proxy": https_proxy,
         "start_date": start_date,
         "end_date": end_date,
+        "sow_field_id": sow_field_id,
     }
 
 def make_session(email: str, token: str, verify: Optional[bool]=True, ca_bundle: Optional[str]="",
@@ -303,11 +316,11 @@ def post_search_jql(session: requests.Session, base_url: str, jql: str, fields: 
         body = {"jql": jql, "fields": fields, "maxResults": 100}
         if next_token:
             body["nextPageToken"] = next_token
-        r = session.post(url, json=body, timeout=timeout)
+        r = http_post_with_retry(session, url, json=body, timeout=timeout, backoff_base=0.0)
         try:
             r.raise_for_status()
         except requests.HTTPError:
-            print(f"ERRO: search/jql falhou ({r.status_code}). Resposta do servidor:\n{r.text}", file=sys.stderr)
+            print(f"ERRO: search/jql falhou ({getattr(r,'status_code','N/A')}). Resposta do servidor:\n{getattr(r,'text','')}", file=sys.stderr)
             sys.exit(3)
         data = r.json()
         issues = data.get("issues", [])
@@ -455,6 +468,34 @@ def http_get_with_retry(session: requests.Session, url: str, params: Optional[Di
                 continue
             return r
 
+def http_post_with_retry(session: requests.Session, url: str, json: Dict[str, Any],
+                         timeout: int = 120, max_tries: int = 5, backoff_base: float = 0.5) -> requests.Response:
+    """HTTP POST with retry/backoff on 429 and 5xx responses. Returns the final response."""
+    tries = 0
+    while True:
+        tries += 1
+        r = session.post(url, json=json, timeout=timeout)
+        if r.status_code == 429 or 500 <= r.status_code < 600:
+            retry_after = r.headers.get("Retry-After")
+            if retry_after:
+                try:
+                    wait = float(retry_after)
+                except Exception:
+                    wait = backoff_base * (2 ** (tries - 1))
+            else:
+                wait = backoff_base * (2 ** (tries - 1))
+            if tries < max_tries:
+                time.sleep(wait)
+                continue
+        try:
+            r.raise_for_status()
+            return r
+        except requests.HTTPError:
+            if tries < max_tries:
+                time.sleep(backoff_base * (2 ** (tries - 1)))
+                continue
+            return r
+
 def fetch_worklogs_for_issue(base_url: str, session_factory, issue: Dict[str, Any],
                              start_utc: datetime, end_utc: datetime, timeout: int) -> List[Dict[str, Any]]:
     """Fetch worklogs for a single issue and map to report rows within a date range.
@@ -558,6 +599,9 @@ def main():
     ca_bundle = cfg.get("ca_bundle", "")
     http_proxy = cfg.get("http_proxy", "")
     https_proxy = cfg.get("https_proxy", "")
+    global SOW_FIELD_ID
+    sow_field_id_eff = (getattr(args, "sow_field_id", "").strip() or cfg.get("sow_field_id") or SOW_FIELD_ID)
+    SOW_FIELD_ID = sow_field_id_eff
 
     if args.insecure:
         verify_val = False
@@ -565,6 +609,7 @@ def main():
         verify_val = verify_ssl_cfg
 
     if not verify_val and not ca_bundle:
+        sys.stderr.write("WARNING: SSL certificate verification is DISABLED. Use only for testing.\n")
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     """     if verify_val:
@@ -591,14 +636,14 @@ def main():
                        http_proxy=http_proxy, https_proxy=https_proxy)
 
     try:
-        sow_ok = ensure_field_exists(ses, base_url, SOW_FIELD_ID, timeout=timeout, verbose=verbose)
+        sow_ok = ensure_field_exists(ses, base_url, sow_field_id_eff, timeout=timeout, verbose=verbose)
     except requests.exceptions.SSLError as e:
         print("ERRO SSL persistente ao validar campos. Tente configurar verify_ssl=false, --insecure ou ca_bundle.", file=sys.stderr)
         raise
 
     fields_list = ["summary", "project", "issuetype", "priority"]
     if sow_ok:
-        fields_list.append(SOW_FIELD_ID)
+        fields_list.append(sow_field_id_eff)
 
     issues = post_search_jql(ses, base_url, jql, fields_list, timeout=timeout, verbose=verbose)
     vprint(verbose, f"Total de issues para processar: {len(issues)}")
@@ -632,17 +677,23 @@ def main():
         out_path += ".xlsx"
 
     df = pd.DataFrame(linhas_all, columns=COLS)
-    with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Relatório")
+    # Ensure output directory exists and write Excel files safely
+    try:
+        os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+        with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Relatório")
 
-    # --- New: short file ---
-    short_df = df[SHORT_COLS].copy()
-    base_dir = os.path.dirname(out_path) or "."
-    base_name = os.path.basename(out_path)
-    root, ext = os.path.splitext(base_name)
-    short_name = os.path.join(base_dir, f"{root}_short{ext}")
-    with pd.ExcelWriter(short_name, engine="openpyxl") as writer:
-        short_df.to_excel(writer, index=False, sheet_name="Relatório")
+        # --- New: short file ---
+        short_df = df[SHORT_COLS].copy()
+        base_dir = os.path.dirname(out_path) or "."
+        base_name = os.path.basename(out_path)
+        root, ext = os.path.splitext(base_name)
+        short_name = os.path.join(base_dir, f"{root}_short{ext}")
+        with pd.ExcelWriter(short_name, engine="openpyxl") as writer:
+            short_df.to_excel(writer, index=False, sheet_name="Relatório")
+    except Exception as e:
+        sys.stderr.write(f"ERRO: falha ao escrever arquivos Excel: {e}\n")
+        sys.exit(4)
 
     print(f"Concluído. Issues analisadas: {len(issues)}, Worklogs exportados: {len(linhas_all)}")
     print(f"Arquivo gerado: {out_path}")

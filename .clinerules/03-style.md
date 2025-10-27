@@ -1,0 +1,3 @@
+- Obey .editorconfig and formatter configs. No mixed tabs/spaces.
+- Prefer composition over inheritance; avoid static singletons.
+- Enforce SOLID; prefer dependency injection.

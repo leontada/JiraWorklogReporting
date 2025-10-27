@@ -1,0 +1,3 @@
+- Never auto-run `git push`, `deploy`, `terraform apply`, or schema-altering commands.
+- For package updates: propose a minimal set + changelog links.
+- For code edits that affect >10 files, summarize risk and request confirmation.

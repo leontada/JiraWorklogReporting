@@ -1,0 +1,4 @@
+- Use .env and never hardcode secrets.
+- For DB work: use migration tools only (Flyway/Liquibase/Prisma/Knex).
+- Before running any script that writes, request a dry-run or plan step.
+- For web apps: enable basic security headers; avoid eval/new Function; validate all inputs.

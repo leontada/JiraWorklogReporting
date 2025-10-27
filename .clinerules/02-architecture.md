@@ -1,0 +1,3 @@
+- Primary stack: Python. Keep layering clean (domain, app, infra).
+- Public APIs must have request/response schemas (OpenAPI/JSON Schema) and contract tests.
+- All new modules must ship with unit tests; critical paths get integration tests.

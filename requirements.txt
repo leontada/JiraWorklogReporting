@@ -1,0 +1,10 @@
+# Pinned runtime dependencies
+requests==2.32.3
+urllib3==2.2.3
+pandas==2.2.2
+python-dateutil==2.9.0.post0
+tqdm==4.66.5
+openpyxl==3.1.5
+
+# Optional (Windows trust store integration)
+# certifi-win32==1.0.1
