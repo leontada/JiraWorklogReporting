@@ -40,6 +40,8 @@ dev = [
   "ruff",
   "mypy",
   "pyinstaller",
+  "types-requests",
+  "types-python-dateutil",
   # Optional Windows trust integration for builder environments:
   # "certifi-win32",
 ]
@@ -48,10 +50,19 @@ dev = [
 jira-worklog-extractor = "jira_worklog_extractor.cli:main"
 
 [tool.ruff]
-line-length = 120
+# Global formatter settings; line-length here, linter rules moved under lint.*
+line-length = 150
 target-version = "py39"
+
+[tool.ruff.lint]
 select = ["E", "F", "I"]
-ignore = ["E203"] # allow black-style slicing if you enable black later
+ignore = ["E203"]  # allow black-style slicing if you enable black later
+
+[tool.ruff.lint.per-file-ignores]
+# Allow test files to have relaxed import ordering, line length, and unused imports
+"tests/**" = ["E402", "I001", "F401", "E501"]
+# Allow legacy wrapper to import after code and keep existing structure
+"mJiraWorkLogExtractor.py" = ["E402", "I001"]
 
 [tool.mypy]
 python_version = "3.9"

@@ -27,10 +27,10 @@ if os.name == "nt":
         _WIN_TRUST = False
 
 # Re-export public API from the package core (single source of truth)
-from jira_worklog_extractor.core import *  # type: ignore  # noqa: F401,F403
+from jira_worklog_extractor.core import *  # noqa: F401,F403
 
 # Ensure main is available from core
-from jira_worklog_extractor.core import main  # type: ignore  # noqa: F401
+from jira_worklog_extractor.core import main  # noqa: F401
 
 
 if __name__ == "__main__":

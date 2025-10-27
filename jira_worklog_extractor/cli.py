@@ -10,7 +10,7 @@ from __future__ import annotations
 def main() -> None:
     # Import inside function to avoid import-time side effects if this module
     # is imported for introspection.
-    from mJiraWorkLogExtractor import main as _main  # type: ignore
+    from .core import main as _main
 
     _main()
 

@@ -6,4 +6,4 @@ Phase 3 packaging shim:
 """
 
 # Re-export everything from the package core (single source of truth)
-from .core import *  # type: ignore  # noqa: F401,F403
+from .core import *  # noqa: F401,F403

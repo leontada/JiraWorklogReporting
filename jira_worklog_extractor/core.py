@@ -12,18 +12,19 @@ Carries forward v10 features:
 
 import argparse
 import configparser
-import sys
 import os
 import re
+import sys
 import time
-from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dateutil.relativedelta import relativedelta
-import requests
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Tuple
+
 import pandas as pd
-from tqdm import tqdm
+import requests
 import urllib3
+from dateutil.relativedelta import relativedelta
+from tqdm import tqdm
 
 # Optional Windows trust store integration via certifi-win32.
 # Use importlib to detect presence without forcing dependency at import time.
@@ -317,7 +318,7 @@ def http_get_with_retry(session: requests.Session, url: str, params: Optional[Di
         tries += 1
         try:
             r = session.get(url, params=params, timeout=timeout)
-        except requests.exceptions.SSLError as e:
+        except requests.exceptions.SSLError:
             raise
         if r.status_code == 429 or 500 <= r.status_code < 600:
             retry_after = r.headers.get("Retry-After")
@@ -632,7 +633,7 @@ def main():
 
     try:
         sow_ok = ensure_field_exists(ses, base_url, sow_field_id_eff, timeout=timeout, verbose=verbose)
-    except requests.exceptions.SSLError as e:
+    except requests.exceptions.SSLError:
         print("ERRO SSL persistente ao validar campos. Tente configurar verify_ssl=false, --insecure ou ca_bundle.", file=sys.stderr)
         raise
 
