@@ -47,7 +47,7 @@ dev = [
 ]
 
 [project.scripts]
-jira-worklog-extractor = "jira_worklog_extractor.cli:main"
+jira-worklog-extractor = "jira_worklog_extractor.core:main"
 
 [tool.ruff]
 # Global formatter settings; line-length here, linter rules moved under lint.*

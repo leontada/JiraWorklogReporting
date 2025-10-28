@@ -41,6 +41,7 @@ dist_*/
 # ------------------------------
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 .pyre/
 .dmypy.json
 .tox/
