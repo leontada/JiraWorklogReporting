@@ -10,11 +10,11 @@ Carries forward v10 features:
 - Default filename mJiraWorkLogExtractor-YYYY-MM-DD-HHMM.xlsx
 """
 
-import os
-import sys
 import argparse
 import configparser
+import os
 import re
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
