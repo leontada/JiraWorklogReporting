@@ -2,6 +2,21 @@
 requires = ["hatchling>=1.25.0"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+# Use src/ layout: specify package path(s) as strings
+packages = ["src/jira_worklog_extractor"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/jira_worklog_extractor",
+  "README.md",
+  "pyproject.toml",
+  "requirements.txt",
+  "TEMPLATE_config.ini",
+  "mJiraWorkLogExtractor.py",
+  "mJiraWorkLogExtractor.spec",
+]
+
 [project]
 name = "jira-worklog-extractor"
 version = "0.0.0"

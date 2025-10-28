@@ -2,8 +2,11 @@ import os
 import sys
 # Ensure project root is importable for tests, regardless of runner CWD
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
+SRC_DIR = os.path.join(ROOT_DIR, "src")
+# Prepend src first so the src/ package is imported over any top-level package
+for p in (SRC_DIR, ROOT_DIR):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 # Route legacy module name to the single source of truth (package core)
 # This keeps existing tests importing mJiraWorkLogExtractor working without duplicating code.
