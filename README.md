@@ -1,4 +1,4 @@
-# mJiraWorkLogExtractor v11
+# mJiraWorkLogExtractor
 
 Exports Jira Cloud worklogs to Excel, with a full report and a short report. Designed for monthly or custom date ranges, supports parallel fetching, robust retry logic, TLS/proxy options, and Windows trust store integration.
 
