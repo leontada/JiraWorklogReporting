@@ -45,7 +45,7 @@ jobs:
         run: ruff check .
 
       - name: Mypy (type-check)
-        run: mypy mJiraWorkLogExtractor.py jira_worklog_extractor
+        run: mypy mJiraWorkLogExtractor.py src/jira_worklog_extractor
 
       - name: Run tests
         run: pytest -q
