@@ -159,7 +159,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--config", default=default_cfg, help=f"Caminho para o config.ini (padrão: {default_cfg})")
     p.add_argument("--out", default="", help="Arquivo .xlsx de saída; se vazio usa padrão mJiraWorkLogExtractor-YYYY-MM-DD-HHMM.xlsx")
     p.add_argument("--verbose", action="store_true", help="Logs detalhados")
-    p.add_argument("--max-workers", type=int, default=8, help="Máximo de threads para worklogs (default=8)")
+    p.add_argument("--max-workers", type=int, default=None, help="Máximo de threads para worklogs (padrão: do config ou 8)")
     p.add_argument("--timeout", type=int, default=120, help="Timeout por requisição (s) (default=120)")
     p.add_argument("--insecure", action="store_true", help="DESATIVA verificação SSL (NÃO RECOMENDADO)")
     p.add_argument("--sow-field-id", default="", help="Override Jira SoW custom field id (e.g., customfield_12345)")
@@ -204,6 +204,12 @@ def read_config(path: str) -> Dict[str, Any]:
     start_date = sec.get("start_date", "").strip() or os.environ.get("JIRA_START_DATE", "").strip()
     end_date   = sec.get("end_date", "").strip() or os.environ.get("JIRA_END_DATE", "").strip()
     sow_field_id = sec.get("sow_field_id", "").strip()
+    # Optional: max_workers from config
+    _mw_str = sec.get("max_workers", "").strip()
+    try:
+        max_workers_cfg = int(_mw_str) if _mw_str else None
+    except Exception:
+        max_workers_cfg = None
 
     return {
         "base_url": base_url,
@@ -216,6 +222,7 @@ def read_config(path: str) -> Dict[str, Any]:
         "start_date": start_date,
         "end_date": end_date,
         "sow_field_id": sow_field_id,
+        "max_workers": max_workers_cfg,
     }
 
 def make_session(email: str, token: str, verify: Optional[bool]=True, ca_bundle: Optional[str]="",
@@ -614,7 +621,9 @@ def main():
 
     verbose  = args.verbose
     timeout  = args.timeout
-    max_workers = max(1, args.max_workers)
+    cfg_mw = cfg.get("max_workers")
+    mw_eff = args.max_workers if args.max_workers is not None else (cfg_mw if cfg_mw is not None else 8)
+    max_workers = max(1, int(mw_eff))
 
     start_str = cfg.get("start_date", "")
     end_str   = cfg.get("end_date", "")

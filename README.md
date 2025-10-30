@@ -109,6 +109,8 @@ The extractor reads settings from `config.ini` in INI format under the `[jira]` 
   - Jira API token for your account.
 - sow_field_id (optional)
   - Jira custom field ID used for SoW (default: `customfield_11921`). Many instances use different IDs; set this if needed.
+- max_workers (optional, default: 8)
+  - Controls concurrency for fetching worklogs. If not provided on CLI, the value from config (if set) is used; otherwise defaults to 8. CLI flag `--max-workers` overrides this config value.
 - verify_ssl (optional, default: true)
   - `true` to verify SSL certs; `false` to disable verification (not recommended).
 - ca_bundle (optional)
@@ -187,7 +189,7 @@ Common CLI options:
 - `--config` Path to config file (default as per location rules).
 - `--out` Output `.xlsx` filename. If omitted, a default timestamped name is used.
 - `--verbose` Print extra logs (JQL, ranges, totals).
-- `--max-workers` Max threads for parallel worklog fetch (default: 8).
+- `--max-workers` Max threads for parallel worklog fetch (default: from config or 8).
 - `--timeout` Per-request timeout seconds (default: 120).
 - `--insecure` Disables SSL verification (not recommended; similar to `verify_ssl = false`).
 - `--sow-field-id` Override Jira SoW custom field id (e.g., `customfield_12345`).
