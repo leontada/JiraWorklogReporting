@@ -33,7 +33,7 @@ jobs:
       - name: Build EXE with PyInstaller
         shell: pwsh
         run: |
-          pyinstaller --onefile --name mJiraWorkLogExtractor --icon mJiraWorkLogExtractor.ico --hidden-import dateutil.relativedelta mJiraWorkLogExtractor.py
+          pyinstaller --onefile --name mJiraWorkLogExtractor --paths src --icon mJiraWorkLogExtractor.ico --hidden-import dateutil.relativedelta mJiraWorkLogExtractor.py
           echo "Listing dist directory contents:"
           Get-ChildItem dist
 
